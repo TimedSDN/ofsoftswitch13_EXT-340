@@ -1289,6 +1289,7 @@ usage(void)
             "  SWITCH queue-get-config PORT           send queue_get_config message\n"
             "\n"
             "  SWITCH bundle [open|close|commit|discard] send bundle control message\n"
+            "  SWITCH bundle commit -b [bundle id] -f 4(TIME FLAG) -T [sec] -N [nanosec] send bundle commit in time\n"
     		"  SWITCH bundle-features -f [FLAGS] [-P [SCHED_MAX_PAST_SEC] -p [SCHED_MAX_PAST_NANO] -S [SCHED_MAX_FUTURE_SEC] -s [SCHED_MAX_FUTURE_NANO]]\n"
             "\n"
             "OpenFlow extensions\n"

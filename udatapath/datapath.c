@@ -246,7 +246,7 @@ dp_run(struct datapath *dp) {
 
     	if((time_check.tv_sec >sched_sec) || ((time_check.tv_sec == sched_sec) && ((time_check.tv_usec*1000) >= sched_nsec))){
     			printf("Commit Bundle in time sched :%lu.%09u\n",sched_sec,sched_nsec);
-				printf("Commit Bundle in time actual:%u.%09u\n",time_check.tv_sec,time_check.tv_usec);
+				printf("Commit Bundle in time actual:%u.%09u\n",time_check.tv_sec,time_check.tv_usec*1000);
 	    		bundle_time_ctl.commiting_now=1;
 	    		    // shutting down only time flag
 					bundle_time_ctl.ctl.flags=bundle_time_ctl.ctl.flags & 0xFFFB;
