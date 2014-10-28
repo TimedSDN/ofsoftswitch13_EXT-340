@@ -13,4 +13,5 @@ VLOG_MODULE(meter_t)
 VLOG_MODULE(pipeline)
 VLOG_MODULE(udatapath)
 VLOG_MODULE(action_set)
+VLOG_MODULE(bundle)
 

@@ -266,7 +266,7 @@ struct ofl_msg_bundle_control {
     uint32_t  bundle_id; /* Bundle instance. */
     uint16_t  type;      /* One of OFPBT_*. */
     uint16_t  flags;     /* One of OFPBF_*. */
-    struct ofp_bundle_prop_header **properties; //TIME_EXTENTION_EXP
+    struct ofp_bundle_prop_header *properties; //TIME_EXTENTION_EXP
 };
 
 /* Bundled operations - append message. OFPT_BUNDLE_APPEND. */

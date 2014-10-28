@@ -109,7 +109,7 @@ ofl_msg_pack_bundle_control(struct ofl_msg_bundle_control *msg, uint8_t **buf, s
 				ctl->type      =  htons(msg->type);
 				ctl->flags     =  htons(msg->flags);
 				
-				prop_time_aux = (struct ofp_bundle_prop_time *)*(msg->properties);
+				prop_time_aux = (struct ofp_bundle_prop_time *)msg->properties;
 				prop_time = (struct ofp_bundle_prop_time *)malloc(sizeof(struct ofp_bundle_prop_time));
 				prop_time->length = htons(prop_time_aux->length);
 				prop_time->type   = htons(prop_time_aux->type);

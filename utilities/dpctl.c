@@ -986,7 +986,7 @@ bundle_control(struct vconn *vconn, int argc UNUSED, char *argv[] UNUSED) {
             prop_time->scheduled_time.nanoseconds=bundle_time_nsec;
             prop_time->scheduled_time.seconds    =bundle_time_sec;
 
-            req.properties = &prop_time;
+            req.properties = prop_time;
             printf("Dcptl send bundle commit in time = %u.%u, flag = %u (make sure if T>0 then f=4)\n",bundle_time_sec,bundle_time_nsec,bundle_flags);//TIME_EXTENTION_EXP
             req.bundle_id = bundle_id;
             req.flags = bundle_flags;

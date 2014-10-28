@@ -42,9 +42,8 @@
 #include "vlog.h"
 
 extern struct bundle_time_ctl bundle_time_ctl;//TIME_EXTENTION_EXP
-// TODO update for bundles, and change printf()-s to log API calls
-//#define LOG_MODULE VLM_bundle_t
 
+#define LOG_MODULE VLM_bundle
 static struct vlog_rate_limit rl = VLOG_RATE_LIMIT_INIT(60, 60);
 
 /* Create a structure to retain an appended message. */
@@ -60,7 +59,8 @@ bundle_message_create(struct ofl_msg_bundle_add_msg *add_msg) {
     msg->message = xmalloc(message_length);
     memcpy(msg->message, add_msg->message, message_length);
 
-    printf("Created %u byte bundle message entry for bundle ID %u.\n",
+    VLOG_DBG_RL(LOG_MODULE, &rl,
+           "Created %u byte bundle message entry for bundle ID %u.\n",
            message_length,
            add_msg->bundle_id);
 
@@ -85,7 +85,7 @@ bundle_table_entry_create(uint32_t bundle_id, uint16_t flags) {
     entry->bundle_id = bundle_id;
     entry->flags = flags;
     entry->closed = false;
-    printf("Created bundle table entry for bundle ID %u.\n", bundle_id);
+    VLOG_DBG_RL(LOG_MODULE, &rl, "Created bundle table entry for bundle ID %u.\n", bundle_id);
 
     return entry;
 }
@@ -96,14 +96,14 @@ bundle_table_entry_destroy(struct bundle_table_entry *entry) {
     struct bundle_message *bundle_msg, *bundle_msg_next;
 
     LIST_FOR_EACH_SAFE (bundle_msg, bundle_msg_next, struct bundle_message, node, &entry->bundle_message_list) {
-        printf("Free message with type %u and length %u\n",
+        VLOG_DBG_RL(LOG_MODULE, &rl, "Free message with type %u and length %u\n",
                bundle_msg->message->type,
                ntohs(bundle_msg->message->length));
         list_remove(&bundle_msg->node);
         bundle_message_free(bundle_msg);
     }
     list_remove(&entry->node);
-    printf("Destroyed bundle table entry for bundle ID %u.\n", entry->bundle_id);
+    VLOG_DBG_RL(LOG_MODULE, &rl, "Destroyed bundle table entry for bundle ID %u.\n", entry->bundle_id);
     free(entry);
 }
 
@@ -276,7 +276,7 @@ bundle_commit(struct datapath *dp,
 
             /* Commit all messages in bundle, stopping at first error */
             LIST_FOR_EACH (bundle_msg, struct bundle_message, node, &entry->bundle_message_list) {
-                printf("Commit of message with type %u and length %u\n",
+                VLOG_DBG_RL(LOG_MODULE, &rl, "Commit of message with type %u and length %u\n",
                        bundle_msg->message->type,
                        ntohs(bundle_msg->message->length));
 
@@ -410,10 +410,10 @@ bundle_handle_control(struct datapath *dp,
         return ofl_error(OFPET_BAD_REQUEST, OFPBRC_IS_SLAVE);
     }
 
-    printf("Processing bundle control message with type %d\n", ctl->type);
+    VLOG_DBG_RL(LOG_MODULE, &rl, "Processing bundle control message with type %d\n", ctl->type);
     switch (ctl->type) {
         case OFPBCT_OPEN_REQUEST: {
-            printf("Processing bundle open of bundle ID %u\n", ctl->bundle_id);
+            VLOG_DBG_RL(LOG_MODULE, &rl, "Processing bundle open of bundle ID %u\n", ctl->bundle_id);
             error = bundle_open(table, ctl->bundle_id, ctl->flags);
             if(!error) {
                 reply.type = OFPBCT_OPEN_REPLY;
@@ -424,7 +424,7 @@ bundle_handle_control(struct datapath *dp,
             return error;
         }
         case OFPBCT_CLOSE_REQUEST: {
-            printf("Processing bundle close of bundle ID %u\n", ctl->bundle_id);
+            VLOG_DBG_RL(LOG_MODULE, &rl, "Processing bundle close of bundle ID %u\n", ctl->bundle_id);
             error = bundle_close(table, ctl->bundle_id, ctl->flags);
             if(!error) {
                 reply.type = OFPBCT_CLOSE_REPLY;
@@ -435,7 +435,7 @@ bundle_handle_control(struct datapath *dp,
             return error;
         }
         case OFPBCT_DISCARD_REQUEST: {
-            printf("Processing bundle discard of bundle ID %u\n", ctl->bundle_id);
+            VLOG_DBG_RL(LOG_MODULE, &rl, "Processing bundle discard of bundle ID %u\n", ctl->bundle_id);
             error = bundle_discard(table, ctl->bundle_id, ctl->flags);
             if(!error) {
             	bundle_time_ctl.ctl.flags=0; //TIME_EXTENTION_EXP (discard any bundle pending)
@@ -451,8 +451,8 @@ bundle_handle_control(struct datapath *dp,
         	//TIME_EXTENTION_EXP(open)
         		case OFPBF_TIME:{
         		error = 0;
-				printf("Processing bundle commit IN TIME of bundle ID %u, no ACK on this msg (if not error)\n", ctl->bundle_id);
-					prop_time = (struct ofp_bundle_prop_time *)(*ctl->properties);
+				VLOG_DBG_RL(LOG_MODULE, &rl, "Processing bundle commit IN TIME of bundle ID %u, no ACK on this msg (if not error)\n", ctl->bundle_id);
+					prop_time = (struct ofp_bundle_prop_time *)ctl->properties;
 					bundle_time_ctl.sched_time.nanoseconds = prop_time->scheduled_time.nanoseconds;
 					bundle_time_ctl.sched_time.seconds     = prop_time->scheduled_time.seconds;
 					bundle_time_ctl.discard                = 0;
@@ -478,6 +478,7 @@ bundle_handle_control(struct datapath *dp,
 					}
 					//check time limits
 					//future limit check
+					VLOG_DBG_RL(LOG_MODULE, &rl, "future check : %ld vs %ld (%ld - %ld)", bundle_time_ctl.features.sched_max_future.seconds, bundle_time_ctl.sched_time.seconds - time_check.tv_sec, bundle_time_ctl.sched_time.seconds, time_check.tv_sec);
 					if(max_future_sec < bundle_time_ctl.sched_time.seconds){
 						error = ofl_error(OFPET_BUNDLE_FAILED, OFPBFC_SCHED_FUTURE);
 					}
@@ -505,11 +506,12 @@ bundle_handle_control(struct datapath *dp,
 					bundle_time_ctl.conn_id=sender->conn_id;
 					bundle_time_ctl.xid=sender->xid;
 						ofl_msg_free((struct ofl_msg_header *)ctl, dp->exp);//TIME_EXTENTION_EXP ? maybe
+						return error; // 0
 				break;
 				}
         		// normal commit (now)
         		default:{
-					printf("Processing bundle commit of bundle ID %u\n", ctl->bundle_id);
+					VLOG_DBG_RL(LOG_MODULE, &rl, "Processing bundle commit of bundle ID %u\n", ctl->bundle_id);
 					error = bundle_commit(dp, table, ctl->bundle_id, ctl->flags, sender);
 					if(!error) {
 						reply.type = OFPBCT_COMMIT_REPLY;

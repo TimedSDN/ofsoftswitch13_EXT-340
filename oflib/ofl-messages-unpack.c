@@ -730,6 +730,7 @@ ofl_msg_unpack_bundle_control(struct ofp_header *src, size_t *len, struct ofl_ms
     dm->bundle_id = ntohl(sm->bundle_id);
     dm->type = ntohs(sm->type);
     dm->flags = ntohs(sm->flags);
+    dm->properties = NULL;
 
     if(dm->flags==OFPBF_TIME)
     {
@@ -742,7 +743,7 @@ ofl_msg_unpack_bundle_control(struct ofp_header *src, size_t *len, struct ofl_ms
     	prop_time->scheduled_time.seconds=ntohll(prop_time_aux->scheduled_time.seconds);
     	prop_time->scheduled_time.nanoseconds=ntohl(prop_time_aux->scheduled_time.nanoseconds);
     	free(prop_time_aux);
-    	dm->properties=&(prop_time);
+    	dm->properties= (struct ofp_bundle_prop_header *) prop_time;
     	*len -= sizeof(struct ofp_bundle_prop_time);
 
     }

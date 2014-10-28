@@ -73,8 +73,8 @@ struct bundle_time_ctl bundle_time_ctl ={
 		.discard = 0,
 		{
 				.type = 0,
-				{0,1000000}, //sched_accuracy  -1 [sec] //to be updated on statistics
-				{1,0},  //sched_max_future 1[sec]
+				{0,1000000}, //sched_accuracy  -0.001[sec]
+				{10,0},  //sched_max_future 10[sec]
  				{1,0},  //sched_max_past   1[sec]
  				{0,0},  //timestamp
 		},

@@ -294,6 +294,7 @@ ofl_msg_free(struct ofl_msg_header *msg, struct ofl_exp *exp) {
             break;
         }
         case OFPT_BUNDLE_CONTROL: {
+	  // if property != NULL -> free array of properties
             break;
         }
         case OFPT_BUNDLE_ADD_MESSAGE: {

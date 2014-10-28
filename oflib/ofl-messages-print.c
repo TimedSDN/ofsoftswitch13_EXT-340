@@ -757,7 +757,7 @@ ofl_msg_print_role_msg(struct ofl_msg_role_request *msg, FILE *stream){
 
 static void
 ofl_msg_print_bundle_control(struct ofl_msg_bundle_control *msg, FILE *stream) {
-    fprintf(stream, "{type=%s,bundle_id=%u}",
+    fprintf(stream, "{type=%s,bundle_id=%u",
             (msg->type == OFPBCT_OPEN_REQUEST)    ? "OPEN_REQUEST" :
             (msg->type == OFPBCT_OPEN_REPLY)      ? "OPEN_REPLY" :
             (msg->type == OFPBCT_CLOSE_REQUEST)   ? "CLOSE_REQUEST" :
@@ -768,6 +768,12 @@ ofl_msg_print_bundle_control(struct ofl_msg_bundle_control *msg, FILE *stream) {
             (msg->type == OFPBCT_DISCARD_REPLY)   ? "DISCARD_REPLY" :
             "???",
             msg->bundle_id);
+    if (msg->flags == OFPBF_TIME) {
+	struct ofp_bundle_prop_time *prop_time;
+	prop_time = (struct ofp_bundle_prop_time *)msg->properties;
+        fprintf(stream, "props=[time_s=%ld,time_ns=%ld]", prop_time->scheduled_time.seconds, prop_time->scheduled_time.nanoseconds);
+    }
+    fprintf(stream, "}");
 }
 
 static void
