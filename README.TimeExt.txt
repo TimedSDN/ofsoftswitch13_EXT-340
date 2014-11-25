@@ -39,6 +39,9 @@ The following Dpctl command configures both parameters to 100 seconds.
 
 > ./utilities/dpctl tcp:localhost:6635 bundle-feature -f 2 -P 100 -S 100
 
+The following Dpctl command displays the sched_max_past and sched_max_future parameters that are currently configured at the switch.
+
+> ./utilities/dpctl tcp:localhost:6635 bundle-feature -f 0 
 
 Using Dpctl to send Scheduled Bundles
 =====================================
@@ -54,7 +57,7 @@ The ScheduledTime is expressed in UTC format (seconds.nanoseconds). If you want 
 Example for a Scheduled Bundle procedure:
 
 > ./utilities/dpctl tcp:localhost:6635 bundle open -b 17
-> ./utilities/dpctl tcp:localhost:6635 bundle flow-mod table=0,cmd=add ,in_port=2, apply:output=1
+> ./utilities/dpctl tcp:localhost:6635 bundle -b 17 table=0,cmd=add ,in_port=2, apply:output=1
 > ./utilities/dpctl tcp:localhost:6635 bundle commit -b 17 -f 4 -T 1411648179 -N 123456789
 
 After completing these three steps, Dpctl waits until the switch completes the scheduled bundle and sends an acknowledgement. This may take a while...
