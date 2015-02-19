@@ -69,8 +69,9 @@
 
 #define LOG_MODULE VLM_dp
 //TIME_EXTENTION_EXP(open)
+
 struct bundle_time_ctl bundle_time_ctl ={
-		.discard = 0,
+//		.discard = 0,
 		{
 				.type = 0,
 				{0,1000000}, //sched_accuracy  -0.001[sec]
@@ -78,11 +79,11 @@ struct bundle_time_ctl bundle_time_ctl ={
  				{1,0},  //sched_max_past   1[sec]
  				{0,0},  //timestamp
 		},
-		.commiting_now =0,
+//		.commiting_now =0,
 		.capabilities  = OFPBF_TIME,
-		.ctl.flags=0,
-		.sched_time.seconds = 0,
-		.sched_time.nanoseconds = 0,
+//		.ctl.flags=0,
+//		.sched_time.seconds = 0,
+//		.sched_time.nanoseconds = 0,
 };
 //TIME_EXTENTION_EXP(close)
 static struct vlog_rate_limit rl = VLOG_RATE_LIMIT_INIT(60, 60);
@@ -231,6 +232,7 @@ dp_run(struct datapath *dp) {
     struct timeval time_check;
     uint64_t sched_sec;
     uint32_t sched_nsec;
+    int itr;
 
     if (now != dp->last_timeout) {
         dp->last_timeout = now;
@@ -240,20 +242,24 @@ dp_run(struct datapath *dp) {
 
     //TIME_EXTENTION_EXP
     gettimeofday(&time_check, 0);
-    if((bundle_time_ctl.ctl.flags!=0) & (!bundle_time_ctl.discard) ){
-    	sched_sec  = bundle_time_ctl.sched_time.seconds;
-        sched_nsec = bundle_time_ctl.sched_time.nanoseconds;
+    for (itr=0 ; itr<5 ;itr++){
+		if((bundle_time_ctl.commit_msg[itr].ctl.flags!=0) & (!bundle_time_ctl.commit_msg[itr].discard) ){
+			sched_sec  = bundle_time_ctl.commit_msg[itr].sched_time.seconds;
+			sched_nsec = bundle_time_ctl.commit_msg[itr].sched_time.nanoseconds;
+			time_check.tv_sec += bundle_time_offset_g;
 
-    	if((time_check.tv_sec >sched_sec) || ((time_check.tv_sec == sched_sec) && ((time_check.tv_usec*1000) >= sched_nsec))){
-    			printf("Commit Bundle in time sched :%lu.%09u\n",sched_sec,sched_nsec);
-				printf("Commit Bundle in time actual:%u.%09u\n",time_check.tv_sec,time_check.tv_usec*1000);
-	    		bundle_time_ctl.commiting_now=1;
-	    		    // shutting down only time flag
-					bundle_time_ctl.ctl.flags=bundle_time_ctl.ctl.flags & 0xFFFB;
-					struct sender sender = {.remote = bundle_time_ctl.remote, .conn_id = bundle_time_ctl.conn_id , .xid = bundle_time_ctl.xid};
-					handle_control_msg(dp, &bundle_time_ctl.ctl, &sender);
-				bundle_time_ctl.commiting_now=0;
-    		}
+			if((time_check.tv_sec >sched_sec) || ((time_check.tv_sec == sched_sec) && ((time_check.tv_usec*1000) >= sched_nsec))){
+					printf("Commit offset %d (T UTC)\n",bundle_time_offset_g);
+					printf("Commit Bundle %d in time sched :%lu.%09u\n",itr,sched_sec,sched_nsec);
+					printf("Commit Bundle %d in time actual:%u.%09u\n",itr,time_check.tv_sec,time_check.tv_usec*1000);
+					bundle_time_ctl.commit_msg[itr].commiting_now=1;
+						// shutting down only time flag
+						bundle_time_ctl.commit_msg[itr].ctl.flags=bundle_time_ctl.commit_msg[itr].ctl.flags & 0xFFFB;
+						struct sender sender = {.remote = bundle_time_ctl.commit_msg[itr].remote, .conn_id = bundle_time_ctl.commit_msg[itr].conn_id , .xid = bundle_time_ctl.commit_msg[itr].xid};
+						handle_control_msg(dp, &bundle_time_ctl.commit_msg[itr].ctl, &sender);
+					bundle_time_ctl.commit_msg[itr].commiting_now=0;
+				}
+		}
     }
 
     poll_timer_wait(1000);

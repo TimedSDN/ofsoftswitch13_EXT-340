@@ -108,6 +108,7 @@ static uint32_t bundle_max_future_sec = 0;
 static uint32_t bundle_max_past_sec = 0;
 static uint32_t bundle_max_future_nano = 0;
 static uint32_t bundle_max_past_nano = 0;
+static uint32_t bundle_time_offset = 0;
 //TIME_EXTENTION_EXP(close)
 static uint8_t mask_all[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
@@ -1048,7 +1049,7 @@ bundle_feature_req(struct vconn *vconn, int argc UNUSED, char *argv[] UNUSED) {
 
 	if ((bundle_flags & OFPBF_TIMESTAMP)>0){
 		gettimeofday(&time_check, 0);
-		req.features.timestamp.seconds            = time_check.tv_sec;
+		req.features.timestamp.seconds            = time_check.tv_sec + bundle_time_offset;
 		req.features.timestamp.nanoseconds        = time_check.tv_usec*1000;
 	}
 	else{
@@ -1095,7 +1096,7 @@ static struct command all_commands[] = {
     {"queue-mod", 3, 3, queue_mod},
     {"queue-del", 2, 2, queue_del},
     {"bundle", 1, 2, bundle_control},//TIME_EXTENTION_EXP change number of min max arg
-    {"bundle-feature",0,1,bundle_feature_req},//TIME_EXTENTION_EXP 1 flag argument
+    {"bundle-feature",0,6,bundle_feature_req},//TIME_EXTENTION_EXP 1 flag argument
 };
 
 
@@ -1166,6 +1167,7 @@ parse_options(int argc, char *argv[])
         {"bundle", required_argument, 0, 'b'},
         {"bundle_time_sec" ,required_argument ,0,'T'},//TIME_EXTENTION_EXP
         {"bundle_time_nsec" ,required_argument ,0,'N'},//TIME_EXTENTION_EXP
+        {"bundle_time_feature0" ,required_argument ,0,'O'},//TIME_EXTENTION_EXP
         {"bundle_time_feature1" ,required_argument ,0,'P'},//TIME_EXTENTION_EXP
         {"bundle_time_feature2" ,required_argument ,0,'p'},//TIME_EXTENTION_EXP
         {"bundle_time_feature3" ,required_argument ,0,'S'},//TIME_EXTENTION_EXP
@@ -1222,6 +1224,9 @@ parse_options(int argc, char *argv[])
             break;
         case 'N':
         	bundle_time_nsec = strtoul(optarg, NULL, 10);
+        	break;
+        case 'O':
+        	bundle_time_offset = strtoul(optarg, NULL, 10);
         	break;
         	//TIME_EXTENTION_EXP(close)
         case 'f':
@@ -1290,7 +1295,7 @@ usage(void)
             "\n"
             "  SWITCH bundle [open|close|commit|discard] send bundle control message\n"
             "  SWITCH bundle commit -b [bundle id] -f 4(TIME FLAG) -T [sec] -N [nanosec] send bundle commit in time\n"
-    		"  SWITCH bundle-features -f [FLAGS] [-P [SCHED_MAX_PAST_SEC] -p [SCHED_MAX_PAST_NANO] -S [SCHED_MAX_FUTURE_SEC] -s [SCHED_MAX_FUTURE_NANO]]\n"
+    		"  SWITCH bundle-features -f [FLAGS] -O [TIME_OFFSET][-P [SCHED_MAX_PAST_SEC] -p [SCHED_MAX_PAST_NANO] -S [SCHED_MAX_FUTURE_SEC] -s [SCHED_MAX_FUTURE_NANO]]\n"
             "\n"
             "OpenFlow extensions\n"
             "  SWITCH set-desc DESC                   sets the DP description\n"

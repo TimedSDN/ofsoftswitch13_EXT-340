@@ -58,11 +58,12 @@
 /****************************************************************************
  * Bundle Commit in time module
  ****************************************************************************/
-struct bundle_time_ctl {
-	int    discard;
-    struct ofl_bundle_features_prop_time features;
-    uint16_t capabilities;    /* OFPBF_ATOMIC | OFPBF_ORDERED | OFPBF_TIME */
+static uint32_t bundle_time_offset_g;
+//ORON(open)
 
+struct bundle_commit_time_prop {
+
+	int    discard;
     int    commiting_now;
 
     struct ofp_time sched_time;
@@ -72,6 +73,18 @@ struct bundle_time_ctl {
     uint8_t conn_id;            /* The connection that sent the message */
     uint32_t xid;				/* The transmission id*/
 };
+
+struct bundle_time_ctl {
+
+    struct ofl_bundle_features_prop_time features;
+    uint16_t capabilities;    /* OFPBF_ATOMIC | OFPBF_ORDERED | OFPBF_TIME */
+
+    struct bundle_commit_time_prop commit_msg[5];
+};
+
+
+
+//ORON(close)
 //TIME_EXTENTION_EXP(close)
 
 struct rconn;

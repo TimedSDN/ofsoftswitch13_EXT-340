@@ -41,6 +41,7 @@
 
 #include "vlog.h"
 
+extern uint32_t bundle_time_offset_g; //ORON
 extern struct bundle_time_ctl bundle_time_ctl;//TIME_EXTENTION_EXP
 
 #define LOG_MODULE VLM_bundle
@@ -202,8 +203,8 @@ bundle_discard(struct bundle_table *table,
     struct bundle_table_entry *entry;
     ofl_err error;
     //TIME_EXTENTION_EXP(open)
-    if(bundle_time_ctl.discard==0){
-    	bundle_time_ctl.discard = 1;
+    if(bundle_time_ctl.commit_msg[bundle_id].discard==0){ //ORON
+    	bundle_time_ctl.commit_msg[bundle_id].discard = 1; //ORON
     }
     //TIME_EXTENTION_EXP(close)
     entry = bundle_table_entry_find(table, bundle_id);
@@ -358,7 +359,7 @@ bundle_handle_features_request(struct datapath *dp,
 	}
 	// always returns reply timestamp
 	gettimeofday(&time_check, 0);
-	reply.features.timestamp.seconds            = time_check.tv_sec;
+	reply.features.timestamp.seconds            = time_check.tv_sec + bundle_time_offset_g;
 	reply.features.timestamp.nanoseconds        = time_check.tv_usec*1000;
 
 
@@ -438,7 +439,7 @@ bundle_handle_control(struct datapath *dp,
             VLOG_DBG_RL(LOG_MODULE, &rl, "Processing bundle discard of bundle ID %u\n", ctl->bundle_id);
             error = bundle_discard(table, ctl->bundle_id, ctl->flags);
             if(!error) {
-            	bundle_time_ctl.ctl.flags=0; //TIME_EXTENTION_EXP (discard any bundle pending)
+            	bundle_time_ctl.commit_msg[ctl->bundle_id].ctl.flags=0; //TIME_EXTENTION_EXP (discard any bundle pending) //ORON
                 reply.type = OFPBCT_DISCARD_REPLY;
                 reply.bundle_id = ctl->bundle_id;
                 dp_send_message(dp, (struct ofl_msg_header *)&reply, sender);
@@ -453,11 +454,12 @@ bundle_handle_control(struct datapath *dp,
         		error = 0;
 				VLOG_DBG_RL(LOG_MODULE, &rl, "Processing bundle commit IN TIME of bundle ID %u, no ACK on this msg (if not error)\n", ctl->bundle_id);
 					prop_time = (struct ofp_bundle_prop_time *)ctl->properties;
-					bundle_time_ctl.sched_time.nanoseconds = prop_time->scheduled_time.nanoseconds;
-					bundle_time_ctl.sched_time.seconds     = prop_time->scheduled_time.seconds;
-					bundle_time_ctl.discard                = 0;
+					bundle_time_ctl.commit_msg[ctl->bundle_id].sched_time.nanoseconds = prop_time->scheduled_time.nanoseconds; //ORON
+					bundle_time_ctl.commit_msg[ctl->bundle_id].sched_time.seconds     = prop_time->scheduled_time.seconds; //ORON
+					bundle_time_ctl.commit_msg[ctl->bundle_id].discard                = 0;
 					// Check if commit time is valid
 					gettimeofday(&time_check, 0);
+					time_check.tv_sec += bundle_time_offset_g;
 					// check overflow and compute time limits
 					max_future_sec = 0;
 					max_future_nan = time_check.tv_usec*1000 + bundle_time_ctl.features.sched_max_future.nanoseconds;
@@ -478,21 +480,22 @@ bundle_handle_control(struct datapath *dp,
 					}
 					//check time limits
 					//future limit check
-					VLOG_DBG_RL(LOG_MODULE, &rl, "future check : %ld vs %ld (%ld - %ld)", bundle_time_ctl.features.sched_max_future.seconds, bundle_time_ctl.sched_time.seconds - time_check.tv_sec, bundle_time_ctl.sched_time.seconds, time_check.tv_sec);
-					if(max_future_sec < bundle_time_ctl.sched_time.seconds){
+					//ORON
+					VLOG_DBG_RL(LOG_MODULE, &rl, "future check : %ld vs %ld (%ld - %ld)", bundle_time_ctl.features.sched_max_future.seconds, bundle_time_ctl.commit_msg[ctl->bundle_id].sched_time.seconds - time_check.tv_sec, bundle_time_ctl.commit_msg[ctl->bundle_id].sched_time.seconds, time_check.tv_sec); //ORON
+					if(max_future_sec < bundle_time_ctl.commit_msg[ctl->bundle_id].sched_time.seconds){
 						error = ofl_error(OFPET_BUNDLE_FAILED, OFPBFC_SCHED_FUTURE);
 					}
-					else if(max_future_sec == bundle_time_ctl.sched_time.seconds){
-						if(max_future_nan < bundle_time_ctl.sched_time.nanoseconds){
+					else if(max_future_sec == bundle_time_ctl.commit_msg[ctl->bundle_id].sched_time.seconds){
+						if(max_future_nan < bundle_time_ctl.commit_msg[ctl->bundle_id].sched_time.nanoseconds){
 							error = ofl_error(OFPET_BUNDLE_FAILED, OFPBFC_SCHED_FUTURE);
 						}
 					}
 					//past limit check
-					if(max_past_sec > bundle_time_ctl.sched_time.seconds){
+					if(max_past_sec > bundle_time_ctl.commit_msg[ctl->bundle_id].sched_time.seconds){
 						error = ofl_error(OFPET_BUNDLE_FAILED, OFPBFC_SCHED_PAST);
 					}
-					else if (max_past_sec == bundle_time_ctl.sched_time.seconds){
-						if(max_past_nan > bundle_time_ctl.sched_time.nanoseconds){
+					else if (max_past_sec == bundle_time_ctl.commit_msg[ctl->bundle_id].sched_time.seconds){
+						if(max_past_nan > bundle_time_ctl.commit_msg[ctl->bundle_id].sched_time.nanoseconds){
 							error = ofl_error(OFPET_BUNDLE_FAILED, OFPBFC_SCHED_PAST);
 						}
 					}
@@ -500,11 +503,11 @@ bundle_handle_control(struct datapath *dp,
 					if(error){
 						return error;
 					}
-					bundle_time_ctl.ctl=*ctl;
-					bundle_time_ctl.table = table;
-					bundle_time_ctl.remote=sender->remote;
-					bundle_time_ctl.conn_id=sender->conn_id;
-					bundle_time_ctl.xid=sender->xid;
+					bundle_time_ctl.commit_msg[ctl->bundle_id].ctl=*ctl;
+					bundle_time_ctl.commit_msg[ctl->bundle_id].table = table;
+					bundle_time_ctl.commit_msg[ctl->bundle_id].remote=sender->remote;
+					bundle_time_ctl.commit_msg[ctl->bundle_id].conn_id=sender->conn_id;
+					bundle_time_ctl.commit_msg[ctl->bundle_id].xid=sender->xid;
 						ofl_msg_free((struct ofl_msg_header *)ctl, dp->exp);//TIME_EXTENTION_EXP ? maybe
 						return error; // 0
 				break;
@@ -517,7 +520,7 @@ bundle_handle_control(struct datapath *dp,
 						reply.type = OFPBCT_COMMIT_REPLY;
 						reply.bundle_id = ctl->bundle_id;
 						dp_send_message(dp, (struct ofl_msg_header *)&reply, sender);
-						if(!bundle_time_ctl.commiting_now){
+						if(!bundle_time_ctl.commit_msg[ctl->bundle_id].commiting_now){ //ORON
 							ofl_msg_free((struct ofl_msg_header *)ctl, dp->exp);
 						}
 					}
