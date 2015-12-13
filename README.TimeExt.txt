@@ -69,7 +69,8 @@ Example for a Scheduled Bundle procedure:
 > ./utilities/dpctl tcp:localhost:6635 flow-mod -b 17 table=0,cmd=add ,in_port=2, apply:output=1
 > ./utilities/dpctl tcp:localhost:6635 bundle commit -b 17 -f 4 -T 1411648179 -N 123456789
 
-After completing these three steps, Dpctl waits until the switch completes the scheduled bundle and sends an acknowledgement. This may take a while...
+After completing these three steps, Dpctl waits until the switch completes the scheduled bundle and sends an acknowledgement. This may take a while. It is thus recommended to run the commit line in th
+e background (using an '&' at the end of the line).
 
 
 Does the time extension work on Mininet?
