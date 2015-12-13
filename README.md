@@ -10,6 +10,11 @@ The following components are available in this package:
 * `oflib`: a library for converting to/from 1.3 wire format
 * `dpctl`: a tool for configuring the switch from the console
 
+## Time Extension: Scheduled Bundles (EXT-340)
+
+The current version of the switch supports Scheduled Bundles. For further details about using Scheduled Bundles see README.TimeExt.txt .
+The time extension is part of the [TimedSDN project].
+
 # Getting Started
 
 These instructions have been tested on Ubuntu 12.04. Other distributions or versions may need different steps.
@@ -139,3 +144,4 @@ E-mail: Eder Leao Fernandes (ederlf@cpqd.com.br)
 
 [ofp13]: https://www.opennetworking.org/images/stories/downloads/specification/openflow-spec-v1.3.0.pdf
 [ericssonsw11]: https://github.com/TrafficLab/of11softswitch
+[TimedSDN project]: http://tx.technion.ac.il/~dew/TimedSDN.html
